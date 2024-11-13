@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "959475968306",
+    "project_id": "rethemgame",
+    "storage_bucket": "rethemgame.firebasestorage.app",
+    "firebase_url": "https://rethemgame-default-rtdb.firebaseio.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:959475968306:android:ed04b33bd099ddf5490f2b",
+        "android_client_info": {
+          "package_name": "com.DefaultCompany.RethemGame"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-YDJq5ApdxabyRcOj_YWSTmCpBzP45DY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
