@@ -6,7 +6,10 @@ using Firebase;
 using Firebase.Database;
 using Firebase.Storage;
 using Firebase.Extensions;
+using Firebase.Auth;
 using UnityEngine;
+using System.Text.RegularExpressions;
+
 
 //Beatmap.cs            비트맵의 정보를 보유한 클래스 
 //FBManager.cs          파이어베이스 관리
@@ -22,12 +25,56 @@ using UnityEngine;
 //(내부 저장소에 저장되어 있는 파일들을 로컬 db에 저장?해주는 클래스. 향후 다시 게임을 시작했을 때 바로 로딩이 되게 끔 하기 위함.))
 public class FBManager
 {
+    private FirebaseAuth auth; //https://rethemgame-default-rtdb.firebaseio.com
+
     public string FBurl = "https://rethemgame-default-rtdb.firebaseio.com/";  // 여기를 Firebase Console의 Database URL로 변경
-    public string StorageBucketUrl = "gs://rethemgame.firebasestorage.app"; // 여기를 Firebase Console의 Storage Bucket URL로 변경
+    public string StorageBucketUrl = "gs://rethemgame.appspot.com"; // 여기를 Firebase Console의 Storage Bucket URL로 변경
 
     private DatabaseReference databaseRef;
     private FirebaseStorage storage;
     private bool isOnline = true;
+    public void Start()
+    {
+        ValidateFirebaseUrls();
+    }
+
+    void ValidateFirebaseUrls()
+    {
+        // Firebase Database URL 검증
+        if (IsValidFirebaseDatabaseUrl(FBurl))
+        {
+            Debug.Log("Firebase Database URL이 유효합니다: " + FBurl);
+        }
+        else
+        {
+            Debug.LogError("Firebase Database URL이 유효하지 않습니다: " + FBurl);
+        }
+
+        // Firebase Storage Bucket URL 검증
+        if (IsValidFirebaseStorageUrl(StorageBucketUrl))
+        {
+            Debug.Log("Firebase Storage Bucket URL이 유효합니다: " + StorageBucketUrl);
+        }
+        else
+        {
+            Debug.LogError("Firebase Storage Bucket URL이 유효하지 않습니다: " + StorageBucketUrl);
+        }
+    }
+
+    bool IsValidFirebaseDatabaseUrl(string url)
+    {
+        // Firebase Database URL은 https://로 시작하고 .firebaseio.com/으로 끝나야 함
+        string pattern = @"^https:\/\/[a-z0-9\-]+\.firebaseio\.com\/$";
+        return Regex.IsMatch(url, pattern);
+    }
+
+    bool IsValidFirebaseStorageUrl(string url)
+    {
+        // Firebase Storage URL은 gs://로 시작하고 .appspot.com으로 끝나야 함
+        string pattern = @"^gs:\/\/[a-z0-9\-]+\.appspot\.com$";
+        return Regex.IsMatch(url, pattern);
+    }
+
 
     // Firebase 초기화
     public async Task InitializeFirebase()
@@ -37,7 +84,7 @@ public class FBManager
         {
             // Firebase 앱 초기화
             FirebaseApp app = FirebaseApp.DefaultInstance;
-
+            auth = FirebaseAuth.GetAuth(app);
             // Database URL과 Storage Bucket URL을 명시적으로 설정
             app.Options.DatabaseUrl = new Uri(FBurl);
             app.Options.StorageBucket = StorageBucketUrl;
@@ -52,6 +99,51 @@ public class FBManager
         {
             Debug.LogError("Firebase 의존성 확인 실패: " + dependencyStatus);
             isOnline = false; // Firebase 초기화 실패 시 오프라인 상태로 설정
+        }
+    }
+    public async Task SignUpWithEmailPassword(string email, string password)
+    {
+        try
+        {
+            AuthResult authResult = await auth.CreateUserWithEmailAndPasswordAsync(email, password);
+            FirebaseUser newUser = authResult.User;
+            Debug.Log($"회원가입 성공: {newUser.Email}");
+        }
+        catch (FirebaseException e)
+        {
+            Debug.LogError($"회원가입 실패 (Firebase): {e.Message}");
+            Debug.LogError($"오류 코드: {e.ErrorCode}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"회원가입 실패: {e.Message}");
+        }
+    }
+    public bool isauth()
+    {
+        if(auth == null || FirebaseApp.DefaultInstance == null) return false;
+        else return true;
+    }
+    // 이메일과 비밀번호로 로그인하는 메서드
+    public async Task LoginWithEmailPassword(string email, string password)
+    {
+        try
+        {
+            AuthResult authResult = await auth.SignInWithEmailAndPasswordAsync(email, password);
+            FirebaseUser user = authResult.User;
+            Debug.Log($"로그인 성공: {user.Email}");
+        }
+        catch (FirebaseException e) when (e.ErrorCode == (int)AuthError.UserNotFound)
+        {
+            Debug.LogError("로그인 실패: 계정을 찾을 수 없습니다.");
+        }
+        catch (FirebaseException e) when (e.ErrorCode == (int)AuthError.WrongPassword)
+        {
+            Debug.LogError("로그인 실패: 비밀번호가 잘못되었습니다.");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"로그인 실패: {e.Message} {email} {password}");
         }
     }
 
